@@ -1,0 +1,19 @@
+{
+  "name": "2281 Economics – Section 1 (Parts A–D & Section B)",
+  "short_name": "Econ 2281",
+  "description": "Economics 2281 practice: Part A calculations, Part B identify two, Part C explain one, Part D explain two, Section B (a) & (b). PDF question bank, mastery, disputes. By Excellence.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#0d9488",
+  "background_color": "#f0fdfa",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -1,0 +1,1001 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0d9488">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <link rel="manifest" href="manifest.json">
+    <title>2281 Economics – Part A–D & Section B (PWA)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;800&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        :root { --primary: #0d9488; --primary-dark: #0f766e; --accent: #14b8a6; --text: #134e4a; --bg: #f0fdfa; --card: #ffffff; --border: #ccfbf1; --danger: #e74c3c; --muted: #64748b; --success: #22c55e; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); margin: 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding: 20px; color: var(--text); position: relative; }
+        header { position: absolute; top: 20px; right: 20px; z-index: 10; max-width: calc(100% - 40px); }
+        .brand-box { text-align: right; border-right: 6px solid var(--primary); padding-right: 15px; }
+        /* line-height must not be tighter than ~1 — 0.8 caused glyph overflow and tagline overlapping the title on mobile */
+        .brand-box h1 { margin: 0; color: var(--primary); font-family: 'Plus Jakarta Sans', sans-serif; font-size: 2rem; font-weight: 800; line-height: 1.1; text-transform: uppercase; letter-spacing: -1px; }
+        .brand-box p { margin: 8px 0 0; color: var(--muted); font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1rem; font-style: italic; line-height: 1.3; }
+        .card { background: var(--card); width: 100%; max-width: 620px; padding: 16px 20px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.06); border: 1px solid var(--border); text-align: center; margin-top: 20px; box-sizing: border-box; }
+        .card-title { font-size: 1.25rem; font-weight: 700; color: var(--primary); margin-bottom: 12px; }
+        .stats-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 14px; }
+        .stat-item { background: white; padding: 12px; border-radius: 14px; text-align: center; color: var(--primary-dark); box-shadow: 0 4px 10px rgba(13, 148, 136, 0.1); border: 1px solid var(--border); font-size: 0.95rem; font-weight: 600; }
+        .stat-label { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; display: block; }
+        .stat-val { font-size: 1.2rem; font-weight: bold; color: var(--primary); }
+        .case-text { font-size: 0.95rem; color: var(--muted); margin-bottom: 10px; line-height: 1.4; text-align: left; padding: 10px; background: #f8fafc; border-radius: 8px; border-left: 4px solid var(--primary); }
+        .question-text { font-size: 1.2rem; font-weight: bold; color: var(--primary); margin-bottom: 10px; line-height: 1.3; text-align: left; }
+        .points-input-wrap { margin-bottom: 12px; text-align: left; }
+        .point-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+        .point-row .point-label { flex-shrink: 0; width: 52px; font-size: 0.8rem; font-weight: 700; color: var(--primary); }
+        .point-row input { flex: 1; min-width: 0; padding: 8px 10px; border: 2px solid #ced4da; border-radius: 8px; font-size: 0.9rem; outline: none; box-sizing: border-box; }
+        .point-row input:focus { border-color: var(--primary); }
+        .point-row input.matched { border-color: var(--success); background: #f0fdf4; }
+        .point-row input.missed { border-color: var(--danger); background: #fef2f2; }
+        .point-row .point-mark { flex-shrink: 0; font-size: 0.75rem; color: var(--muted); font-weight: 600; width: 42px; text-align: right; }
+        .single-answer-wrap { margin-bottom: 12px; text-align: left; }
+        .single-answer-wrap input { width: 100%; padding: 10px 14px; border: 2px solid #ced4da; border-radius: 8px; font-size: 1rem; box-sizing: border-box; }
+        .single-answer-wrap input:focus { border-color: var(--primary); outline: none; }
+        .single-answer-wrap input.matched { border-color: var(--success); background: #f0fdf4; }
+        .single-answer-wrap input.missed { border-color: var(--danger); background: #fef2f2; }
+        .explain-wrap { margin-bottom: 12px; text-align: left; }
+        .explain-wrap textarea { width: 100%; min-height: 80px; padding: 10px 14px; border: 2px solid #ced4da; border-radius: 8px; font-size: 0.95rem; font-family: inherit; resize: vertical; box-sizing: border-box; }
+        .explain-wrap textarea:focus { border-color: var(--primary); outline: none; }
+        .explain-wrap textarea.matched { border-color: var(--success); background: #f0fdf4; }
+        .explain-wrap textarea.partial { border-color: #f59e0b; background: #fffbeb; }
+        .explain-wrap textarea.missed { border-color: var(--danger); background: #fef2f2; }
+        .explain-hint { font-size: 0.75rem; color: var(--muted); margin-top: 4px; }
+        .ans-box { background: #f8fafc; padding: 12px; border-radius: 10px; text-align: left; margin-bottom: 12px; display: none; border: 1px solid var(--border); }
+        .ans-box .points-score { font-weight: 800; font-size: 1rem; margin-bottom: 8px; color: var(--primary); }
+        .compare-item { margin-bottom: 6px; padding: 6px 10px; border-radius: 8px; border-left: 3px solid #cbd5e1; background: white; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+        .compare-item.got { border-left-color: var(--success); background: #f0fdf4; }
+        .compare-item.miss { border-left-color: var(--danger); background: #fef2f2; }
+        .compare-item .mark-icon { font-size: 0.95rem; flex-shrink: 0; }
+        .compare-item .scheme-text { font-size: 0.9rem; flex: 1; min-width: 120px; }
+        .compare-item .your-text { font-size: 0.8rem; color: var(--muted); }
+        .partc-highlight { background: rgba(34, 197, 94, 0.25); padding: 1px 2px; border-radius: 2px; font-weight: 500; }
+        .dispute-btn { padding: 8px 14px; font-size: 0.9rem; border-radius: 8px; border: 2px solid var(--primary); background: var(--primary); color: white; cursor: pointer; font-weight: 700; display: inline-block; margin-top: 4px; }
+        .dispute-btn:hover { background: var(--primary-dark); border-color: var(--primary-dark); color: white; }
+        .dispute-btn.disputed { opacity: 0.6; cursor: default; background: var(--muted); border-color: var(--muted); }
+        .compare-item.miss .dispute-wrap { width: 100%; margin-top: 4px; }
+        .compare-item .dispute-wrap { flex-shrink: 0; }
+        .disputes-section { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
+        .dispute-stat { font-size: 0.85rem; color: var(--muted); margin-bottom: 10px; }
+        .dispute-item { margin-bottom: 12px; padding: 12px; border-radius: 10px; border: 1px solid var(--border); background: #f8fafc; font-size: 0.85rem; }
+        .dispute-item.pending { border-left: 4px solid #f59e0b; }
+        .dispute-item.approved { border-left: 4px solid var(--success); }
+        .dispute-item.dismissed { border-left: 4px solid var(--muted); }
+        .dispute-item .dispute-actions { margin-top: 8px; gap: 8px; display: flex; flex-wrap: wrap; }
+        .dispute-item .dispute-actions button { padding: 6px 12px; font-size: 0.8rem; min-width: auto; }
+        .btn-group { display: flex; gap: 8px; flex-wrap: wrap; }
+        button { flex: 1; min-width: 90px; padding: 10px 14px; border-radius: 10px; border: none; color: white; font-weight: bold; cursor: pointer; font-size: 0.95rem; }
+        #submit-btn { background: var(--primary); }
+        #skip-btn { background: #a4b0be; }
+        #next-btn { background: #27ae60; display: none; }
+        .teacher-panel-wrap { max-width: 620px; width: 100%; margin-top: 24px; border: 1px solid var(--border); border-radius: 12px; background: var(--card); overflow: hidden; box-sizing: border-box; }
+        .teacher-panel-header { padding: 12px 16px; background: #f0fdfa; cursor: pointer; font-weight: 700; color: var(--primary-dark); user-select: none; display: flex; justify-content: space-between; align-items: center; }
+        .teacher-panel-header:hover { background: #ccfbf1; }
+        .teacher-panel-body { display: none; padding: 16px; font-size: 0.9rem; border-top: 1px solid var(--border); }
+        .teacher-panel-body.open { display: block; }
+        .struggling-item { margin-bottom: 15px; padding: 12px; border-radius: 8px; border-left: 5px solid var(--danger); background: #fdf2f2; text-align: left; }
+        .bad-badge { background: var(--danger); color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; float: right; }
+        .attempt-info { font-size: 0.85rem; margin-top: 5px; color: #555; }
+        .ctrl-btn { padding: 10px; border: none; border-radius: 8px; color: white; cursor: pointer; font-weight: bold; font-size: 0.8rem; }
+        .reset-link { display: block; margin-top: 20px; text-align: center; color: var(--muted); font-size: 0.9rem; text-decoration: none; }
+        .reset-link:hover { color: var(--danger); text-decoration: underline; }
+        footer { margin-top: 50px; padding: 40px 20px; border-top: 1px solid var(--border); background: var(--card); width: 100%; max-width: 620px; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
+        footer a { text-decoration: none; }
+        footer .yt-links { display: flex; justify-content: center; gap: 50px; margin-bottom: 25px; flex-wrap: wrap; }
+        footer .yt-links a { color: var(--primary); font-size: 1.3rem; font-weight: 800; }
+        footer .loc-links { display: flex; justify-content: center; gap: 60px; flex-wrap: wrap; }
+        footer .loc-links a { color: var(--muted); font-size: 1.1rem; font-weight: 600; }
+        @media (max-width: 640px) {
+            /* Less outer padding on small screens — header + first content fit above the fold */
+            body { padding: 8px 10px 16px; }
+            header {
+                position: static;
+                max-width: 100%;
+                width: 100%;
+                padding: 0;
+                margin: 0 auto 2px;
+            }
+            .brand-box {
+                text-align: center;
+                border-right: none;
+                border-bottom: 3px solid var(--primary);
+                padding: 2px 6px 6px;
+                margin: 0 auto;
+                max-width: 620px;
+                box-sizing: border-box;
+            }
+            .brand-box h1 {
+                font-size: clamp(1.15rem, 4.2vw, 1.55rem);
+                line-height: 1.08;
+                letter-spacing: -0.4px;
+            }
+            .brand-box p {
+                display: block;
+                margin: 3px 0 0;
+                font-size: 0.78rem;
+                line-height: 1.2;
+            }
+            .card { margin-top: 8px; padding: 12px 14px; }
+            .card-title { font-size: 1.05rem; margin-bottom: 10px; }
+        }
+        @media (max-width: 480px) { .stats-bar { grid-template-columns: 1fr 1fr; } .btn-group { flex-direction: column; } button { min-width: 100%; } }
+    </style>
+</head>
+<body>
+<header><div class="brand-box"><h1>Excellence</h1><p>By Adeel Kapasi</p></div></header>
+
+<div class="card">
+    <div class="card-title">2281 Economics – Part A, B, C, D & Section B (a) & (b)</div>
+    <select id="sectionFilter" onchange="initSession()" style="padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 10px; font-size: 0.9rem; width: 100%; max-width: 320px;">
+        <option value="A">Part A: Calculations (132)</option>
+        <option value="B">Part B: Identify Two (147)</option>
+        <option value="C">Part C: Explain One (78)</option>
+        <option value="D">Part D: Explain Two (60)</option>
+        <option value="SBa">Section B: Part (a) (132)</option>
+        <option value="SBb">Section B: Part (b) (92)</option>
+    </select>
+    <label style="display:inline-flex; align-items:center; gap:8px; margin-bottom:10px; cursor:pointer; font-size:0.9rem;">
+        <input type="checkbox" id="masteryEnabled" checked onchange="toggleMastery()">
+        Track mastery
+    </label>
+    <div class="stats-bar">
+        <div class="stat-item"><span class="stat-label">SESSION SCORE</span><span class="stat-val" id="live-score">0</span></div>
+        <div class="stat-item"><span class="stat-label">PROGRESS</span><span class="stat-val" id="session-count">0/20</span></div>
+        <div class="stat-item"><span class="stat-label">UNMASTERED</span><span class="stat-val" id="pool-count">0</span></div>
+        <div class="stat-item"><span class="stat-label">DISPUTES</span><span class="stat-val" id="dispute-count">0</span></div>
+    </div>
+    <details class="dispute-help" style="margin-bottom:10px; text-align:left; font-size:0.8rem; color:var(--muted);">
+        <summary style="cursor:pointer; font-weight:600;">How disputes work</summary>
+        <ul style="margin:8px 0 0 16px; padding-right:10px;">
+            <li><strong>Student:</strong> If an answer is marked wrong (red ✗) but you think it’s right, click <strong>«I was right»</strong> under it. (Part A: one per question; Part B: one per missed point; Part C/D: one per missed part.)</li>
+            <li><strong>Teacher:</strong> Open the <strong>Teacher Monitoring Panel</strong> below. Under Disputes you’ll see each claim with the question, mark scheme and the student’s answer. Click <strong>Approve</strong> to give the mark (and count it toward mastery) or <strong>Dismiss</strong> to reject. Export XLS includes all disputes.</li>
+        </ul>
+    </details>
+    <div style="margin-bottom:12px;">
+        <button type="button" onclick="downloadQuestionBankPdf()" class="ctrl-btn" style="background:#1e3a5f; padding:10px 14px; font-size:0.9rem; width:100%; max-width:100%;">Download question bank (PDF)</button>
+        <p style="font-size:0.75rem; color:var(--muted); margin:6px 0 0 0;">All questions in every section, with case text and the mark schemes / key points used for auto-marking.</p>
+    </div>
+
+    <div id="quiz-content">
+        <div id="q-id" style="text-align: left; color: #999; font-size: 0.75rem; margin-bottom: 2px;">ID: --</div>
+        <div id="case-wrap" class="case-text" style="display:none;"></div>
+        <div class="question-text" id="q-text">Loading...</div>
+
+        <div id="part-a-wrap" style="display:none;" class="single-answer-wrap">
+            <label style="font-size:0.8rem;color:var(--muted);">Your answer (number / value)</label>
+            <input type="text" id="user-answer-a" placeholder="e.g. 25000 or $25,000" autocomplete="off">
+        </div>
+        <div id="part-b-wrap" style="display:none;" class="points-input-wrap">
+            <div class="point-row"><span class="point-label">Point 1</span><input type="text" id="user-point-1" placeholder="Write point..." autocomplete="off"><span class="point-mark">1 mark</span></div>
+            <div class="point-row"><span class="point-label">Point 2</span><input type="text" id="user-point-2" placeholder="Or put both in one box" autocomplete="off"><span class="point-mark">1 mark</span></div>
+        </div>
+        <div id="part-c-wrap" style="display:none;" class="explain-wrap">
+            <label style="font-size:0.8rem;color:var(--muted);">Your answer (identify the point + explain it)</label>
+            <textarea id="user-answer-c" placeholder="E.g. Gain skills (1 mark) – this raises productivity because workers become more efficient at their task (1 mark)" autocomplete="off" rows="4"></textarea>
+            <div class="explain-hint">2 marks: 1 for identification/definition + 1 for explanation. Refer to the case above.</div>
+        </div>
+        <div id="part-d-wrap" style="display:none;" class="explain-wrap">
+            <label style="font-size:0.8rem;color:var(--muted);">Your answer (two points, each: identify + explain)</label>
+            <textarea id="user-answer-d" placeholder="Point 1: Higher income (1 mark) – people have more to save (1 mark). Point 2: Higher interest rate (1 mark) – rewards saving (1 mark)" autocomplete="off" rows="5"></textarea>
+            <div class="explain-hint">4 marks: 1+1 for each of two points. Identify from the case study; explain each point. Max 2 marks for a list without explanation. (CR)</div>
+        </div>
+
+        <div class="ans-box" id="answer-box">
+            <div class="points-score" id="points-score"></div>
+            <div id="answer-list"></div>
+        </div>
+        <div class="btn-group">
+            <button id="skip-btn" onclick="checkAnswer(true)">Skip</button>
+            <button id="submit-btn" onclick="checkAnswer(false)">Submit</button>
+            <button id="next-btn" onclick="nextQuestion()">Next Question →</button>
+        </div>
+    </div>
+    <div id="session-end-view" style="display:none; text-align:center;">
+        <h2>Session Complete!</h2>
+        <p id="mastery-update"></p>
+        <button onclick="initSession()" style="background:var(--primary); padding: 15px 40px;">Start New Session</button>
+    </div>
+</div>
+
+<div class="teacher-panel-wrap">
+    <div id="teacherHeader" class="teacher-panel-header"><span>Teacher Monitoring Panel</span><span id="teacherChevron">▼</span></div>
+    <div id="teacherBody" class="teacher-panel-body">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 15px;">
+            <button type="button" onclick="exportXLS()" class="ctrl-btn" style="background:#34495e;">Export XLS</button>
+            <button type="button" onclick="clearUIPanel()" class="ctrl-btn" style="background:#f39c12;">Clear Panel</button>
+            <button type="button" onclick="downloadQuestionBankPdf()" class="ctrl-btn" style="background:#1e3a5f; grid-column: span 2;">Download question bank (PDF)</button>
+            <button type="button" onclick="masterReset()" class="ctrl-btn" style="background:#c0392b; grid-column: span 2;">MASTER RESET</button>
+        </div>
+        <div class="disputes-section">
+            <div class="dispute-stat" id="dispute-stat">Disputes: 0 pending, 0 approved</div>
+            <p style="font-size:0.8rem; color:var(--muted); margin:4px 0 8px 0;">Approve = give the mark and add to mastery. Dismiss = reject the claim.</p>
+            <div id="disputes-list"></div>
+        </div>
+        <div id="struggling-list"></div>
+    </div>
+</div>
+<a href="#" class="reset-link" onclick="masterReset(); return false;">Reset all progress</a>
+<footer>
+    <div style="max-width: 800px; margin: 0 auto; text-align: center;">
+        <div class="yt-links">
+            <a href="http://www.youtube.com/@AdeelAbbasKapasi" target="_blank">▶ Adeel Kapasi</a>
+            <a href="http://www.youtube.com/@excellencetuitioncentre1786" target="_blank">▶ Excellence</a>
+        </div>
+        <div class="loc-links">
+            <a href="https://www.google.com/maps/place/Excellence+Tuition+Centre" target="_blank">📍 Campus 1</a>
+            <a href="https://www.google.com/maps/place/Excellence+O%2FA+Levels+Tuition" target="_blank">📍 Campus 2</a>
+        </div>
+    </div>
+</footer>
+
+<script src="partA_data.js"></script>
+<script src="partB_data.js"></script>
+<script src="partC_data.js"></script>
+<script src="partD_data.js"></script>
+<script src="sectionB_partA_data.js"></script>
+<script src="sectionB_partB_data.js"></script>
+<script>
+let fullData = [];
+let appData = JSON.parse(localStorage.getItem('econ_2281_mastery')) || { mastered: [], correctHits: {}, struggling: {} };
+function isMasteryEnabled() { return document.getElementById('masteryEnabled').checked; }
+function toggleMastery() {
+    localStorage.setItem('econ_2281_mastery_enabled', document.getElementById('masteryEnabled').checked);
+    updatePoolCount();
+}
+
+function escapeHtml(str) {
+    if (str == null || str === '') return '';
+    const s = String(str);
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+let disputeLog = JSON.parse(localStorage.getItem('econ_2281_disputes')) || [];
+let sessionQuestions = [], pointer = 0, sessionCorrect = 0, sessionMistakeLog = [];
+let lastCheckData = null;
+
+function loadData() {
+    try {
+        const partA = typeof partAData !== 'undefined' ? partAData : [];
+        const partB = typeof partBData !== 'undefined' ? partBData : [];
+        const partC = typeof partCData !== 'undefined' ? partCData : [];
+        const partD = typeof partDData !== 'undefined' ? partDData : [];
+        const sectionBa = typeof sectionBPartAData !== 'undefined' ? sectionBPartAData : [];
+        const sectionBb = typeof sectionBPartBData !== 'undefined' ? sectionBPartBData : [];
+        fullData = partA.map(x => ({ ...x, part: 'A' }))
+            .concat(partB.map(x => ({ ...x, part: 'B' })))
+            .concat(partC.map(x => ({ ...x, part: 'C' })))
+            .concat(partD.map(x => ({ ...x, part: 'D' })))
+            .concat(sectionBa.map(x => ({ ...x, part: 'SBa' })))
+            .concat(sectionBb.map(x => ({ ...x, part: 'SBb' })));
+    } catch (e) {
+        fullData = [];
+    }
+    if (fullData.length === 0)
+        document.getElementById('q-text').innerHTML = 'Could not load questions. Keep the HTML file in the same folder as partA_data.js, partB_data.js, partC_data.js, partD_data.js, sectionB_partA_data.js and sectionB_partB_data.js.';
+    return Promise.resolve(fullData);
+}
+
+function initSession() {
+    if (fullData.length === 0) return;
+    pointer = 0; sessionCorrect = 0;
+    document.getElementById('quiz-content').style.display = 'block';
+    document.getElementById('session-end-view').style.display = 'none';
+    document.getElementById('live-score').innerText = '0';
+    const filter = document.getElementById('sectionFilter').value;
+    let pool = isMasteryEnabled()
+        ? fullData.filter(q => !appData.mastered.includes(q.id) && q.part === filter)
+        : fullData.filter(q => q.part === filter);
+    if (isMasteryEnabled() && pool.length === 0) pool = fullData.filter(q => q.part === filter);
+    sessionQuestions = pool.sort(() => 0.5 - Math.random()).slice(0, 20);
+    renderQuestion();
+    updatePoolCount();
+}
+
+function renderQuestion() {
+    const q = sessionQuestions[pointer];
+    document.getElementById('q-id').innerText = 'ID: ' + q.id;
+    const caseWrap = document.getElementById('case-wrap');
+    caseWrap.style.display = 'block';
+    caseWrap.textContent = q.case || '';
+    document.getElementById('q-text').innerText = q.q || (q.case && q.case.indexOf('Calculate') !== -1 ? q.case : q.case || '');
+
+    if (q.part === 'A') {
+        document.getElementById('part-a-wrap').style.display = 'block';
+        document.getElementById('part-b-wrap').style.display = 'none';
+        document.getElementById('part-c-wrap').style.display = 'none';
+        document.getElementById('part-d-wrap').style.display = 'none';
+        const inp = document.getElementById('user-answer-a');
+        inp.value = ''; inp.disabled = false; inp.classList.remove('matched', 'missed');
+        setTimeout(() => inp.focus(), 50);
+    } else if (q.part === 'B' || q.part === 'SBa') {
+        document.getElementById('part-a-wrap').style.display = 'none';
+        document.getElementById('part-b-wrap').style.display = 'block';
+        document.getElementById('part-c-wrap').style.display = 'none';
+        document.getElementById('part-d-wrap').style.display = 'none';
+        [1, 2].forEach(i => {
+            const inp = document.getElementById('user-point-' + i);
+            inp.value = ''; inp.disabled = false; inp.classList.remove('matched', 'missed');
+        });
+        setTimeout(() => document.getElementById('user-point-1').focus(), 50);
+    } else if (q.part === 'D' || q.part === 'SBb') {
+        document.getElementById('part-a-wrap').style.display = 'none';
+        document.getElementById('part-b-wrap').style.display = 'none';
+        document.getElementById('part-c-wrap').style.display = 'none';
+        document.getElementById('part-d-wrap').style.display = 'block';
+        const hintEl = document.querySelector('#part-d-wrap .explain-hint');
+        if (hintEl) hintEl.textContent = q.part === 'SBb' ? '4 marks: 1+1 for each of two points. Identify two reasons + explain the chain (why/how). You may refer to the stimulus or use syllabus knowledge. Max 2 for list without explanation.' : '4 marks: 1+1 for each of two points. Identify from the case study; explain each point. Max 2 marks for a list without explanation. (CR)';
+        const ta = document.getElementById('user-answer-d');
+        ta.value = ''; ta.disabled = false; ta.classList.remove('matched', 'missed', 'partial');
+        setTimeout(() => ta.focus(), 50);
+    } else {
+        document.getElementById('part-a-wrap').style.display = 'none';
+        document.getElementById('part-b-wrap').style.display = 'none';
+        document.getElementById('part-c-wrap').style.display = 'block';
+        document.getElementById('part-d-wrap').style.display = 'none';
+        const ta = document.getElementById('user-answer-c');
+        ta.value = ''; ta.disabled = false; ta.classList.remove('matched', 'missed', 'partial');
+        setTimeout(() => ta.focus(), 50);
+    }
+    document.getElementById('answer-box').style.display = 'none';
+    document.getElementById('next-btn').style.display = 'none';
+    document.getElementById('submit-btn').style.display = 'block';
+    document.getElementById('skip-btn').style.display = 'block';
+    document.getElementById('session-count').innerText = (pointer + 1) + '/' + sessionQuestions.length;
+}
+
+function normalizeNum(s) {
+    if (!s || typeof s !== 'string') return '';
+    return s.replace(/[\s$,%()]/g, '').replace(/\s+/g, '').toLowerCase().replace(/bn|billion/g, '000000000').replace(/m|million/g, '000000').replace(/trn|trillion/g, '000000000000');
+}
+function extractNumbers(s) {
+    const str = (s || '').replace(/,/g, '');
+    const matches = str.match(/-?\d+(\.\d+)?/g) || [];
+    return matches.map(m => parseFloat(m));
+}
+function matchPartA(userStr, ansStr) {
+    const u = (userStr || '').trim();
+    const a = (ansStr || '').trim();
+    const uNorm = u.replace(/[\s$,%()]/g, '').replace(/,/g, '').toLowerCase();
+    const aNorm = a.replace(/[\s$,%()]/g, '').replace(/,/g, '').toLowerCase();
+    if (uNorm === aNorm) return true;
+    const aNums = extractNumbers(ansStr);
+    const uNums = extractNumbers(userStr);
+    if (aNums.length === 0) return u.length > 0 && a.toLowerCase().includes(u.slice(0, 30));
+    if (uNums.length === 0) return false;
+    const tol = 0.01;
+    return aNums.every(n => uNums.some(un => Math.abs(un - n) < tol));
+}
+
+function matchPointsToScheme(schemePoints, userPoints) {
+    const schemeKeywords = schemePoints.map(s => s.toLowerCase().split(/\W+/).filter(w => w.length > 2));
+    const usedScheme = [false, false], usedUser = [false, false];
+    const pairs = [];
+    for (let si = 0; si < 2; si++)
+        for (let ui = 0; ui < 2; ui++) {
+            let score = 0;
+            const uLower = (userPoints[ui] || '').toLowerCase();
+            schemeKeywords[si].forEach(kw => { if (uLower.includes(kw)) score++; });
+            pairs.push({ schemeIdx: si, userIdx: ui, score });
+        }
+    pairs.sort((a, b) => b.score - a.score);
+    const schemeGot = [-1, -1];
+    let marks = 0;
+    for (const p of pairs) {
+        if (usedScheme[p.schemeIdx] || usedUser[p.userIdx] || p.score < 2) continue;
+        usedScheme[p.schemeIdx] = true; usedUser[p.userIdx] = true;
+        schemeGot[p.schemeIdx] = p.userIdx; marks++;
+    }
+    return { marks, schemeGot };
+}
+function matchBlobToScheme(schemePoints, blob) {
+    const blobLower = (blob || '').toLowerCase();
+    const schemeKeywords = schemePoints.map(s => s.toLowerCase().split(/\W+/).filter(w => w.length > 2));
+    const schemeGot = [-1, -1];
+    let marks = 0;
+    for (let si = 0; si < 2; si++) {
+        let score = 0;
+        schemeKeywords[si].forEach(kw => { if (blobLower.includes(kw)) score++; });
+        if (score >= 2) { schemeGot[si] = 0; marks++; }
+    }
+    return { marks, schemeGot };
+}
+function blobMatchesKw(blob, kw) {
+    if (!blob || !kw) return false;
+    if (blob.includes(kw)) return true;
+    if (kw.length > 4 && kw.endsWith('s') && blob.includes(kw.slice(0, -1))) return true;
+    if (kw.length > 3 && !kw.endsWith('s') && blob.includes(kw + 's')) return true;
+    /* CR: proportion/share/percentage interchangeable for progressive tax */
+    if ((kw === 'proportion' || kw === 'share' || kw === 'percentage') && ['proportion','share','percentage'].some(s => blob.includes(s))) return true;
+    /* MS/ER: credit same meaning – synonym groups (slashes = alternatives) */
+    const SYNONYMS = {
+        'reduce':['reduce','reducing','reduction','lower','lowered','cut','cuts'],
+        'cost':['cost','costs','costing'],
+        'charge':['charge','charging','raise price','higher price','better price'],
+        'price':['price','prices'],
+        'monopoly':['monopoly','monopolistic','market power','dominant','manipulate market'],
+        'competition':['competition','compete','competitors','competing','competitor'],
+        'efficiency':['efficiency','efficient','efficiencies'],
+        'scale':['scale','scales'],
+        'profit':['profit','profits','profitable'],
+        'employment':['employment','employ','employs','jobs','unemployment'],
+        'income':['income','incomes','wage','wages','earnings'],
+        'export':['export','exports','exporting'],
+        'import':['import','imports','importing'],
+        'demand':['demand','demands'],
+        'supply':['supply','supplies'],
+        'productivity':['productivity','productive','produce'],
+        'investment':['investment','invest','investing']
+    };
+    const kwLow = kw.toLowerCase();
+    for (const [k, group] of Object.entries(SYNONYMS)) {
+        if (group.some(g => g === kwLow || kwLow.includes(g) || g.includes(kwLow))) {
+            if (group.some(g => blob.includes(g))) return true;
+        }
+    }
+    return false;
+}
+/* MS: "Max 2 for list without explanation" – reject keyword dumps; require logical chain */
+function blobShowsExplanation(blob) {
+    if (!blob || blob.length < 8) return false;
+    const words = blob.toLowerCase().split(/\W+/).filter(w => w.length >= 2);
+    const CONNECTORS = ['because','so','therefore','thus','hence','when','as','if','by','means','leads','lead','results','result','causes','cause','increases','increase','rises','rise','falls','fall','reduces','reduce','raises','raise','more','less','higher','lower','which','through','enables','enable','allows','allow','affects','affect','produces','produce','enabling','allowing','leading','resulting','reducing','increasing','rising','raising'];
+    return words.some(w => CONNECTORS.includes(w));
+}
+function matchOnePart(text, partStr, requireCoherence) {
+    if (!text || !partStr) return false;
+    const blob = (text || '').toLowerCase();
+    const partLower = (partStr || '').toLowerCase();
+    const kws = partLower.split(/\W+/).filter(w => w.length > 2);
+    const matchCount = kws.filter(kw => blobMatchesKw(blob, kw)).length;
+    /* CR: progressive tax expl requires proportion/share/percentage – "takes more" alone is wrong */
+    if (matchCount >= 2 && partLower.includes('proportion') && partLower.includes('income') && partLower.includes('rich')) {
+        const hasProportionTerm = ['proportion','share','percentage'].some(s => blob.includes(s));
+        const hasAltPath = partLower.includes('tax revenue') && (blob.includes('tax') && (blob.includes('revenue') || blob.includes('spending') || blob.includes('help')));
+        if (!hasProportionTerm && !hasAltPath) return false;
+    }
+    if (matchCount < 2) return false;
+    /* Explanation parts: reject keyword lists; require causal/connector word (MS: list without explanation) */
+    if (requireCoherence && !blobShowsExplanation(blob)) return false;
+    return true;
+}
+function matchPartC(userText, pathways) {
+    const blob = (userText || '').toLowerCase();
+    if (blob.length < 3) return { mark0: false, mark1: false, matchedPathway: -1 };
+    const paths = Array.isArray(pathways) && pathways.length ? pathways : [];
+    const isPathway = p => Array.isArray(p) && p.length >= 2;
+    for (let i = 0; i < paths.length; i++) {
+        const p = paths[i];
+        if (!isPathway(p)) continue;
+        const idOk = matchOnePart(blob, p[0]);
+        const explOk = matchOnePart(blob, p[1], true);
+        if (idOk && explOk) return { mark0: true, mark1: true, matchedPathway: i };
+    }
+    for (let i = 0; i < paths.length; i++) {
+        const p = paths[i];
+        if (!isPathway(p)) continue;
+        const explOk = matchOnePart(blob, p[1], true);
+        if (explOk) return { mark0: false, mark1: true, matchedPathway: i };
+    }
+    for (let i = 0; i < paths.length; i++) {
+        const p = paths[i];
+        if (!isPathway(p)) continue;
+        const idOk = matchOnePart(blob, p[0]);
+        if (idOk) return { mark0: true, mark1: false, matchedPathway: i };
+    }
+    return { mark0: false, mark1: false, matchedPathway: -1 };
+}
+function matchPartD(userText, ans) {
+    const blob = (userText || '').toLowerCase();
+    if (blob.length < 3) return { marks1: 0, marks2: 0, total: 0, result1: null, result2: null, pathways1: [], pathways2: [] };
+    const p1 = Array.isArray(ans) && ans[0] ? ans[0] : [];
+    const p2 = Array.isArray(ans) && ans[1] ? ans[1] : [];
+    const pathsSame = JSON.stringify(p1) === JSON.stringify(p2);
+    if (pathsSame && p1.length > 1) {
+        return matchPartDDistinct(userText, p1);
+    }
+    const r1 = matchPartC(userText, p1);
+    const r2 = matchPartC(userText, p2);
+    const m1 = (r1.mark0 ? 1 : 0) + (r1.mark1 ? 1 : 0);
+    const m2 = (r2.mark0 ? 1 : 0) + (r2.mark1 ? 1 : 0);
+    return { marks1: m1, marks2: m2, total: m1 + m2, result1: r1, result2: r2, pathways1: p1, pathways2: p2 };
+}
+function matchPartDDistinct(userText, pathways) {
+    const blob = (userText || '').toLowerCase();
+    const paths = Array.isArray(pathways) && pathways.length ? pathways : [];
+    const isPathway = p => Array.isArray(p) && p.length >= 2;
+    const scored = [];
+    for (let i = 0; i < paths.length; i++) {
+        if (!isPathway(paths[i])) continue;
+        const p = paths[i];
+        const idOk = matchOnePart(userText, p[0]);
+        const explOk = matchOnePart(userText, p[1], true);
+        const score = (idOk && explOk) ? 2 : (explOk ? 1 : (idOk ? 0.5 : 0));
+        if (score > 0) scored.push({ idx: i, score, mark0: idOk, mark1: explOk });
+    }
+    scored.sort((a, b) => b.score - a.score);
+    let r1 = { mark0: false, mark1: false, matchedPathway: -1 };
+    let r2 = { mark0: false, mark1: false, matchedPathway: -1 };
+    if (scored.length >= 1) {
+        r1 = { mark0: scored[0].mark0, mark1: scored[0].mark1, matchedPathway: scored[0].idx };
+        if (scored.length >= 2) {
+            const second = scored.find(s => s.idx !== scored[0].idx);
+            if (second) r2 = { mark0: second.mark0, mark1: second.mark1, matchedPathway: second.idx };
+        }
+    }
+    const m1 = (r1.mark0 ? 1 : 0) + (r1.mark1 ? 1 : 0);
+    const m2 = (r2.mark0 ? 1 : 0) + (r2.mark1 ? 1 : 0);
+    return { marks1: m1, marks2: m2, total: m1 + m2, result1: r1, result2: r2, pathways1: paths, pathways2: paths };
+}
+function getMatchedKws(blob, partStr) {
+    const kws = (partStr || '').toLowerCase().split(/\W+/).filter(w => w.length > 2);
+    return kws.filter(kw => blobMatchesKw(blob, kw));
+}
+function wordMatchesKw(word, kw) {
+    const w = (word || '').toLowerCase();
+    const k = (kw || '').toLowerCase();
+    if (w === k) return true;
+    if (k.length > 4 && k.endsWith('s') && w === k.slice(0, -1)) return true;
+    if (k.length > 3 && !k.endsWith('s') && w === k + 's') return true;
+    return false;
+}
+function highlightPartCWords(text, partStr, markGot) {
+    if (!text || !markGot) return escapeHtml(text || '—');
+    const blob = (text || '').toLowerCase();
+    const matched = getMatchedKws(blob, partStr);
+    if (matched.length === 0) return escapeHtml(text);
+    const tokens = text.split(/(\s+)/);
+    return tokens.map(t => {
+        if (/^\s+$/.test(t)) return escapeHtml(t);
+        const parts = t.split(/[-\/]/).concat([t.replace(/[^\w-]/g, '')]);
+        const isMatch = matched.some(kw => parts.some(p => wordMatchesKw(p.replace(/[^\w]/g, ''), kw)));
+        return isMatch ? '<mark class="partc-highlight">' + escapeHtml(t) + '</mark>' : escapeHtml(t);
+    }).join('');
+}
+
+function checkAnswer(isSkip) {
+    const q = sessionQuestions[pointer];
+    const box = document.getElementById('answer-box');
+    const list = document.getElementById('answer-list');
+    const scoreEl = document.getElementById('points-score');
+
+    if (q.part === 'A') {
+        const userVal = document.getElementById('user-answer-a').value.trim();
+        const ansList = Array.isArray(q.ans) ? q.ans : [q.ans];
+        const correct = !isSkip && userVal !== '' && ansList.some(a => matchPartA(userVal, a));
+        const schemeDisplay = ansList.length > 1 ? ansList.join(' or ') : ansList[0];
+        document.getElementById('user-answer-a').disabled = true;
+        document.getElementById('user-answer-a').classList.add(correct ? 'matched' : 'missed');
+        scoreEl.innerHTML = isSkip ? 'Skipped. Correct answer:' : (correct ? 'Correct!' : 'Review:');
+        scoreEl.style.color = correct ? 'var(--success)' : 'var(--danger)';
+        lastCheckData = { q, rawUserPoints: [userVal] };
+        const partAPending = disputeLog.some(d => d.questionId === q.id && d.schemeIdx === 0 && d.approved === null);
+        const partADisputeBtn = correct ? '' : '<span class="dispute-wrap"><button type="button" class="dispute-btn' + (partAPending ? ' disputed' : '') + '" onclick="addDispute(0)" ' + (partAPending ? 'disabled' : '') + '>' + (partAPending ? 'Claimed' : 'I was right') + '</button></span>';
+        list.innerHTML = '<div class="compare-item ' + (correct ? 'got' : 'miss') + '" data-scheme-idx="0"><span class="mark-icon">' + (correct ? '✓' : '✗') + '</span><span class="scheme-text">' + escapeHtml(schemeDisplay) + '</span><span class="your-text">You: ' + escapeHtml(userVal || '—') + '</span>' + partADisputeBtn + '</div>';
+        if (q.concept) list.innerHTML += '<p style="font-size:0.85rem;color:var(--muted);margin-top:8px;">' + escapeHtml(q.concept) + '</p>';
+        box.style.display = 'block';
+        if (correct) { sessionCorrect++; if (isMasteryEnabled()) { appData.correctHits[q.id] = (appData.correctHits[q.id] || 0) + 1; if (appData.correctHits[q.id] >= 2) appData.mastered.push(q.id); } }
+        else {
+            if (isMasteryEnabled()) { appData.correctHits[q.id] = 0; appData.struggling[q.id] = (appData.struggling[q.id] || 0) + 1; }
+            sessionMistakeLog.push({ id: q.id, q: q.q, studentAns: isSkip ? '(Skipped)' : userVal, marks: '0/1', correctScheme: schemeDisplay });
+            renderTeacherReview();
+        }
+        updateDisputeCount();
+    } else if (q.part === 'D' || q.part === 'SBb') {
+        const userText = document.getElementById('user-answer-d').value.trim();
+        const pathways = Array.isArray(q.ans) && q.ans.length >= 2 ? q.ans : [[], []];
+        const result = !isSkip && userText ? matchPartD(userText, pathways) : { marks1: 0, marks2: 0, total: 0, result1: null, result2: null, pathways1: [], pathways2: [] };
+        const { marks1, marks2, total, result1, result2, pathways1, pathways2 } = result;
+        document.getElementById('user-answer-d').disabled = true;
+        document.getElementById('user-answer-d').classList.add(total === 4 ? 'matched' : (total >= 2 ? 'partial' : 'missed'));
+        const scheme1 = pathways1.length ? (pathways1[0] ? (pathways1[0][0] || '') + ' → ' + (pathways1[0][1] || '') : '') : '';
+        const scheme2 = pathways2.length ? (pathways2[0] ? (pathways2[0][0] || '') + ' → ' + (pathways2[0][1] || '') : '') : '';
+        const scheme1Id = [...new Set(pathways1.map(p => p[0]).filter(Boolean))].join(' / ');
+        const scheme1Expl = [...new Set(pathways1.map(p => p[1]).filter(Boolean))].join(' / ');
+        const scheme2Id = [...new Set(pathways2.map(p => p[0]).filter(Boolean))].join(' / ');
+        const scheme2Expl = [...new Set(pathways2.map(p => p[1]).filter(Boolean))].join(' / ');
+        const pid1 = result1 && result1.matchedPathway >= 0 ? pathways1[result1.matchedPathway][0] : '';
+        const pexpl1 = result1 && result1.matchedPathway >= 0 ? pathways1[result1.matchedPathway][1] : '';
+        const pid2 = result2 && result2.matchedPathway >= 0 ? pathways2[result2.matchedPathway][0] : '';
+        const pexpl2 = result2 && result2.matchedPathway >= 0 ? pathways2[result2.matchedPathway][1] : '';
+        const displayText = userText ? (userText.length > 120 ? userText.slice(0, 120) + '…' : userText) : '—';
+        lastCheckData = { q, rawUserPoints: [userText, userText], pathways1, pathways2, scheme1Id, scheme1Expl, scheme2Id, scheme2Expl };
+        const pendingDisputes = disputeLog.filter(d => d.questionId === q.id && d.approved === null).map(d => d.schemeIdx);
+        const gotP1Id = result1 && result1.mark0;
+        const gotP1Expl = result1 && result1.mark1;
+        const gotP2Id = result2 && result2.mark0;
+        const gotP2Expl = result2 && result2.mark1;
+        list.innerHTML = '<div class="compare-item ' + (gotP1Id ? 'got' : 'miss') + '" data-scheme-idx="0"><span class="mark-icon">' + (gotP1Id ? '✓' : '✗') + '</span><span class="scheme-text">Point 1: [ID] ' + escapeHtml(scheme1Id || '—') + '</span><span class="your-text">' + (gotP1Id ? 'You: ' + highlightPartCWords(displayText, pid1, true) : 'You: ' + escapeHtml(displayText)) + '</span>' + (gotP1Id ? '' : '<span class="dispute-wrap"><button type="button" class="dispute-btn ' + (pendingDisputes.indexOf(0) !== -1 ? 'disputed' : '') + '" onclick="addDispute(0)" ' + (pendingDisputes.indexOf(0) !== -1 ? 'disabled' : '') + '>' + (pendingDisputes.indexOf(0) !== -1 ? 'Claimed' : 'I was right') + '</button></span>') + '</div>';
+        list.innerHTML += '<div class="compare-item ' + (gotP1Expl ? 'got' : 'miss') + '" data-scheme-idx="1"><span class="mark-icon">' + (gotP1Expl ? '✓' : '✗') + '</span><span class="scheme-text">Point 1: [Expl] ' + escapeHtml((scheme1Expl || '').slice(0, 120)) + (scheme1Expl && scheme1Expl.length > 120 ? '…' : '') + '</span><span class="your-text">' + (gotP1Expl ? 'You: ' + highlightPartCWords(displayText, pexpl1, true) : 'You: ' + escapeHtml(displayText)) + '</span>' + (gotP1Expl ? '' : '<span class="dispute-wrap"><button type="button" class="dispute-btn ' + (pendingDisputes.indexOf(1) !== -1 ? 'disputed' : '') + '" onclick="addDispute(1)" ' + (pendingDisputes.indexOf(1) !== -1 ? 'disabled' : '') + '>' + (pendingDisputes.indexOf(1) !== -1 ? 'Claimed' : 'I was right') + '</button></span>') + '</div>';
+        list.innerHTML += '<div class="compare-item ' + (gotP2Id ? 'got' : 'miss') + '" data-scheme-idx="2"><span class="mark-icon">' + (gotP2Id ? '✓' : '✗') + '</span><span class="scheme-text">Point 2: [ID] ' + escapeHtml(scheme2Id || '—') + '</span><span class="your-text">' + (gotP2Id ? 'You: ' + highlightPartCWords(displayText, pid2, true) : 'You: ' + escapeHtml(displayText)) + '</span>' + (gotP2Id ? '' : '<span class="dispute-wrap"><button type="button" class="dispute-btn ' + (pendingDisputes.indexOf(2) !== -1 ? 'disputed' : '') + '" onclick="addDispute(2)" ' + (pendingDisputes.indexOf(2) !== -1 ? 'disabled' : '') + '>' + (pendingDisputes.indexOf(2) !== -1 ? 'Claimed' : 'I was right') + '</button></span>') + '</div>';
+        list.innerHTML += '<div class="compare-item ' + (gotP2Expl ? 'got' : 'miss') + '" data-scheme-idx="3"><span class="mark-icon">' + (gotP2Expl ? '✓' : '✗') + '</span><span class="scheme-text">Point 2: [Expl] ' + escapeHtml((scheme2Expl || '').slice(0, 120)) + (scheme2Expl && scheme2Expl.length > 120 ? '…' : '') + '</span><span class="your-text">' + (gotP2Expl ? 'You: ' + highlightPartCWords(displayText, pexpl2, true) : 'You: ' + escapeHtml(displayText)) + '</span>' + (gotP2Expl ? '' : '<span class="dispute-wrap"><button type="button" class="dispute-btn ' + (pendingDisputes.indexOf(3) !== -1 ? 'disputed' : '') + '" onclick="addDispute(3)" ' + (pendingDisputes.indexOf(3) !== -1 ? 'disabled' : '') + '>' + (pendingDisputes.indexOf(3) !== -1 ? 'Claimed' : 'I was right') + '</button></span>') + '</div>';
+        if (pathways1.length > 1 || pathways2.length > 1) list.innerHTML += '<p style="font-size:0.75rem;color:var(--muted);margin-top:4px;">MS accepts any pathway per point.</p>';
+        scoreEl.innerHTML = isSkip ? 'Skipped – Mark scheme:' : 'Your score: <strong>' + total + '/4</strong> marks';
+        scoreEl.style.color = total === 4 ? 'var(--success)' : (total >= 2 ? 'var(--primary)' : 'var(--danger)');
+        box.style.display = 'block';
+        if (q.concept) list.innerHTML += '<p style="font-size:0.85rem;color:var(--muted);margin-top:8px;">' + escapeHtml(q.concept) + '</p>';
+        const isCorrect = (total === 4);
+        if (isCorrect) { sessionCorrect++; if (isMasteryEnabled()) { appData.correctHits[q.id] = (appData.correctHits[q.id] || 0) + 1; if (appData.correctHits[q.id] >= 2) appData.mastered.push(q.id); } }
+        else {
+            if (isMasteryEnabled()) { appData.correctHits[q.id] = 0; appData.struggling[q.id] = (appData.struggling[q.id] || 0) + 1; }
+            sessionMistakeLog.push({ id: q.id, q: q.q, studentAns: isSkip ? '(Skipped)' : userText, marks: total + '/4', correctScheme: scheme1 + ' | ' + scheme2, disputedPoints: [] });
+            renderTeacherReview();
+        }
+        updateDisputeCount();
+    } else if (q.part === 'C') {
+        const userText = document.getElementById('user-answer-c').value.trim();
+        const pathways = Array.isArray(q.ans) && q.ans.length && Array.isArray(q.ans[0]) ? q.ans : (Array.isArray(q.ans) && q.ans.length >= 2 ? [q.ans] : [[q.ans, '']]);
+        const result = !isSkip && userText ? matchPartC(userText, pathways) : { mark0: false, mark1: false, matchedPathway: -1 };
+        const { mark0, mark1, matchedPathway } = result;
+        const marks = (mark0 ? 1 : 0) + (mark1 ? 1 : 0);
+        document.getElementById('user-answer-c').disabled = true;
+        document.getElementById('user-answer-c').classList.add(marks === 2 ? 'matched' : (marks === 1 ? 'partial' : 'missed'));
+        const schemeId = pathways.map(p => (p[0] || '') + ' → ' + (p[1] || '')).join(' | ');
+        const schemeIdParts = [...new Set(pathways.map(p => p[0]).filter(Boolean))].join(' / ');
+        const schemeExplParts = [...new Set(pathways.map(p => p[1]).filter(Boolean))].join(' / ');
+        const pid = matchedPathway >= 0 ? pathways[matchedPathway][0] : '';
+        const pexpl = matchedPathway >= 0 ? pathways[matchedPathway][1] : '';
+        const displayText = userText ? (userText.length > 120 ? userText.slice(0, 120) + '…' : userText) : '—';
+        const youHighlightId = 'You: ' + highlightPartCWords(displayText, pid, mark0);
+        const youHighlightExpl = 'You: ' + highlightPartCWords(displayText, pexpl, mark1);
+        lastCheckData = { q, rawUserPoints: [userText, userText], pathways, schemeIdParts, schemeExplParts };
+        const pendingDisputes = disputeLog.filter(d => d.questionId === q.id && d.approved === null).map(d => d.schemeIdx);
+        list.innerHTML = '<div class="compare-item ' + (mark0 ? 'got' : 'miss') + '" data-scheme-idx="0"><span class="mark-icon">' + (mark0 ? '✓' : '✗') + '</span><span class="scheme-text">[Identification/Definition] ' + escapeHtml(schemeIdParts || '—') + '</span><span class="your-text">' + youHighlightId + '</span>' + (mark0 ? '' : '<span class="dispute-wrap"><button type="button" class="dispute-btn ' + (pendingDisputes.indexOf(0) !== -1 ? 'disputed' : '') + '" data-scheme-idx="0" onclick="addDispute(0)" ' + (pendingDisputes.indexOf(0) !== -1 ? 'disabled' : '') + '>' + (pendingDisputes.indexOf(0) !== -1 ? 'Claimed' : 'I was right') + '</button></span>') + '</div>';
+        list.innerHTML += '<div class="compare-item ' + (mark1 ? 'got' : 'miss') + '" data-scheme-idx="1"><span class="mark-icon">' + (mark1 ? '✓' : '✗') + '</span><span class="scheme-text">[Explanation/Example] ' + escapeHtml(schemeExplParts.length > 120 ? schemeExplParts.slice(0, 120) + '…' : schemeExplParts) + '</span><span class="your-text">' + youHighlightExpl + '</span>' + (mark1 ? '' : '<span class="dispute-wrap"><button type="button" class="dispute-btn ' + (pendingDisputes.indexOf(1) !== -1 ? 'disputed' : '') + '" data-scheme-idx="1" onclick="addDispute(1)" ' + (pendingDisputes.indexOf(1) !== -1 ? 'disabled' : '') + '>' + (pendingDisputes.indexOf(1) !== -1 ? 'Claimed' : 'I was right') + '</button></span>') + '</div>';
+        if (pathways.length > 1) list.innerHTML += '<p style="font-size:0.75rem;color:var(--muted);margin-top:4px;">MS accepts any pathway.</p>';
+        scoreEl.innerHTML = isSkip ? 'Skipped – Mark scheme:' : 'Your score: <strong>' + marks + '/2</strong> marks';
+        scoreEl.style.color = marks === 2 ? 'var(--success)' : (marks >= 1 ? 'var(--primary)' : 'var(--danger)');
+        box.style.display = 'block';
+        if (q.concept) list.innerHTML += '<p style="font-size:0.85rem;color:var(--muted);margin-top:8px;">' + escapeHtml(q.concept) + '</p>';
+        const isCorrect = (marks === 2);
+        if (isCorrect) { sessionCorrect++; if (isMasteryEnabled()) { appData.correctHits[q.id] = (appData.correctHits[q.id] || 0) + 1; if (appData.correctHits[q.id] >= 2) appData.mastered.push(q.id); } }
+        else {
+            if (isMasteryEnabled()) { appData.correctHits[q.id] = 0; appData.struggling[q.id] = (appData.struggling[q.id] || 0) + 1; }
+            sessionMistakeLog.push({ id: q.id, q: q.q, studentAns: isSkip ? '(Skipped)' : userText, marks: marks + '/2', correctScheme: schemeId, disputedPoints: [] });
+            renderTeacherReview();
+        }
+        updateDisputeCount();
+    } else if (q.part === 'B' || q.part === 'SBa') {
+        const userPoints = [1, 2].map(i => document.getElementById('user-point-' + i).value.trim());
+        let rawUserPoints = [1, 2].map(i => document.getElementById('user-point-' + i).value);
+        let marks = 0, schemeGot = [-1, -1];
+        const nonEmptyCount = userPoints.filter(p => p !== '').length;
+        if (!isSkip && nonEmptyCount > 0) {
+            if (nonEmptyCount === 1) {
+                const blob = userPoints.find(p => p !== '') || '';
+                const result = matchBlobToScheme(q.ans, blob);
+                marks = result.marks; schemeGot = result.schemeGot;
+                rawUserPoints = [blob, blob];
+            } else { const result = matchPointsToScheme(q.ans, userPoints); marks = result.marks; schemeGot = result.schemeGot; }
+        }
+        [1, 2].forEach(i => {
+            const inp = document.getElementById('user-point-' + i);
+            inp.disabled = true;
+            const hasContent = userPoints[i - 1] !== '';
+            if (nonEmptyCount === 1 && hasContent) inp.classList.add(marks > 0 ? 'matched' : 'missed');
+            else if (nonEmptyCount > 1) { const got = schemeGot.indexOf(i - 1) !== -1; inp.classList.add(got ? 'matched' : (hasContent ? 'missed' : '')); }
+            else if (hasContent) inp.classList.add(marks > 0 ? 'matched' : 'missed');
+        });
+        lastCheckData = { q, rawUserPoints };
+        const indices = [0, 1].slice().sort(() => Math.random() - 0.5);
+        const pendingDisputes = disputeLog.filter(d => d.questionId === q.id && d.approved === null).map(d => d.schemeIdx);
+        const trunc = (s, len) => (s.length <= len ? s : s.slice(0, len) + '…');
+        list.innerHTML = indices.map(si => {
+            const got = schemeGot[si] >= 0;
+            const raw = got ? rawUserPoints[schemeGot[si]] : '';
+            const userText = got ? trunc(raw, 70) : '—';
+            const alreadyDisputed = pendingDisputes.indexOf(si) !== -1;
+            const disputeBtn = got ? '' : '<span class="dispute-wrap"><button type="button" class="dispute-btn ' + (alreadyDisputed ? 'disputed' : '') + '" data-scheme-idx="' + si + '" onclick="addDispute(' + si + ')" ' + (alreadyDisputed ? 'disabled' : '') + '>' + (alreadyDisputed ? 'Claimed' : 'I was right') + '</button></span>';
+            return '<div class="compare-item ' + (got ? 'got' : 'miss') + '" data-scheme-idx="' + si + '"><span class="mark-icon">' + (got ? '✓' : '✗') + '</span><span class="scheme-text">' + escapeHtml(q.ans[si]) + '</span><span class="your-text">You: ' + escapeHtml(userText) + '</span>' + disputeBtn + '</div>';
+        }).join('');
+        scoreEl.innerHTML = isSkip ? 'Skipped – Mark scheme:' : 'Your score: <strong>' + marks + '/2</strong> marks';
+        scoreEl.style.color = marks === 2 ? 'var(--success)' : (marks >= 1 ? 'var(--primary)' : 'var(--danger)');
+        box.style.display = 'block';
+        if (q.concept) list.innerHTML += '<p style="font-size:0.85rem;color:var(--muted);margin-top:8px;">' + escapeHtml(q.concept) + '</p>';
+        const isCorrect = (marks === 2);
+        if (isCorrect) { sessionCorrect++; if (isMasteryEnabled()) { appData.correctHits[q.id] = (appData.correctHits[q.id] || 0) + 1; if (appData.correctHits[q.id] >= 2) appData.mastered.push(q.id); } }
+        else {
+            if (isMasteryEnabled()) { appData.correctHits[q.id] = 0; appData.struggling[q.id] = (appData.struggling[q.id] || 0) + 1; }
+            sessionMistakeLog.push({ id: q.id, q: q.q, studentAns: isSkip ? '(Skipped)' : (nonEmptyCount === 1 ? userPoints.find(p => p !== '') || '' : userPoints.join(' | ')), marks: marks + '/2', correctScheme: q.ans[0], disputedPoints: [] });
+            renderTeacherReview();
+        }
+        updateDisputeCount();
+    }
+
+    document.getElementById('live-score').innerText = sessionCorrect;
+    document.getElementById('submit-btn').style.display = 'none';
+    document.getElementById('skip-btn').style.display = 'none';
+    document.getElementById('next-btn').style.display = 'block';
+    save();
+}
+
+function nextQuestion() {
+    pointer++;
+    if (pointer >= sessionQuestions.length) {
+        document.getElementById('quiz-content').style.display = 'none';
+        document.getElementById('session-end-view').style.display = 'block';
+        document.getElementById('mastery-update').innerText = isMasteryEnabled() ? appData.mastered.length + ' / ' + fullData.length + ' mastered' : '';
+    } else renderQuestion();
+}
+
+function saveDisputes() { localStorage.setItem('econ_2281_disputes', JSON.stringify(disputeLog)); }
+function addDispute(schemeIdx) {
+    if (!lastCheckData) return;
+    const { q, rawUserPoints, schemeIdParts, schemeExplParts, scheme1Id, scheme1Expl, scheme2Id, scheme2Expl } = lastCheckData;
+    let schemeText;
+    if ((q.part === 'D' || q.part === 'SBb') && (scheme1Id !== undefined || scheme2Id !== undefined)) {
+        schemeText = schemeIdx === 0 ? scheme1Id : schemeIdx === 1 ? scheme1Expl : schemeIdx === 2 ? scheme2Id : scheme2Expl;
+    } else if (q.part === 'C' && (schemeIdParts !== undefined || schemeExplParts !== undefined)) {
+        schemeText = schemeIdx === 0 ? schemeIdParts : schemeExplParts;
+    } else {
+        schemeText = Array.isArray(q.ans) ? q.ans[schemeIdx] : q.ans;
+    }
+    if (disputeLog.some(d => d.questionId === q.id && d.schemeIdx === schemeIdx && d.approved === null)) return;
+    disputeLog.push({ questionId: q.id, qText: q.q, schemeIdx, schemeText: schemeText || '', studentPoints: rawUserPoints.slice(), approved: null, timestamp: Date.now() });
+    saveDisputes(); updateDisputeCount(); renderDisputes();
+    const btn = document.querySelector('.compare-item[data-scheme-idx="' + schemeIdx + '"] .dispute-btn');
+    if (btn) { btn.textContent = 'Claimed'; btn.classList.add('disputed'); btn.disabled = true; }
+}
+function approveDispute(idx) {
+    const d = disputeLog[idx];
+    if (!d || d.approved !== null) return;
+    d.approved = true;
+    if (isMasteryEnabled()) { appData.correctHits[d.questionId] = (appData.correctHits[d.questionId] || 0) + 1; if (appData.correctHits[d.questionId] >= 2 && !appData.mastered.includes(d.questionId)) appData.mastered.push(d.questionId); }
+    save(); saveDisputes(); updateDisputeCount(); updatePoolCount(); renderDisputes();
+}
+function dismissDispute(idx) {
+    const d = disputeLog[idx];
+    if (!d || d.approved !== null) return;
+    d.approved = false; saveDisputes(); updateDisputeCount(); renderDisputes();
+}
+function updateDisputeCount() {
+    const pending = disputeLog.filter(d => d.approved === null).length;
+    const approved = disputeLog.filter(d => d.approved === true).length;
+    const el = document.getElementById('dispute-count');
+    if (el) el.textContent = pending;
+    const stat = document.getElementById('dispute-stat');
+    if (stat) stat.textContent = 'Disputes: ' + pending + ' pending, ' + approved + ' approved';
+}
+function renderDisputes() {
+    const list = document.getElementById('disputes-list');
+    if (!list) return;
+    const pending = disputeLog.filter(d => d.approved === null);
+    const resolved = disputeLog.filter(d => d.approved !== null).slice(-15).reverse();
+    list.innerHTML = pending.map(d => {
+        const idx = disputeLog.indexOf(d);
+        return '<div class="dispute-item pending"><div class="scheme-label">' + escapeHtml(d.questionId + ': ' + d.qText) + '</div><div>Mark scheme: ' + escapeHtml(d.schemeText) + '</div><div class="student-label">Student: ' + escapeHtml((d.studentPoints || []).join(' | ')) + '</div><div class="dispute-actions"><button type="button" class="ctrl-btn" style="background:var(--success);" onclick="approveDispute(' + idx + ')">Approve</button><button type="button" class="ctrl-btn" style="background:var(--muted);" onclick="dismissDispute(' + idx + ')">Dismiss</button></div></div>';
+    }).join('') + (resolved.length ? '<h4 style="margin-top:12px;font-size:0.9rem;">Recently resolved</h4>' : '') + resolved.map(d => '<div class="dispute-item ' + (d.approved ? 'approved' : 'dismissed') + '"><div class="scheme-label">' + escapeHtml(d.questionId) + '</div><div>' + escapeHtml(d.schemeText) + '</div></div>').join('');
+}
+function renderTeacherReview() {
+    const list = document.getElementById('struggling-list');
+    list.innerHTML = sessionMistakeLog.slice().reverse().map(m => '<div class="struggling-item"><span class="bad-badge">' + escapeHtml(m.marks || '—') + '</span><strong>' + escapeHtml(m.id + ': ' + m.q) + '</strong><div class="attempt-info">Student: <code>' + escapeHtml(m.studentAns) + '</code><br>Key: ' + escapeHtml(m.correctScheme) + '</div></div>').join('');
+    renderDisputes();
+}
+function isIdExplPair(x) {
+    return Array.isArray(x) && x.length === 2 && typeof x[0] === 'string' && typeof x[1] === 'string';
+}
+/** Flatten Part D / SBb pathway trees into numbered ID + Expl lines */
+function collectPathwayLines(block) {
+    const lines = [];
+    if (!block) return lines;
+    if (isIdExplPair(block)) {
+        lines.push('  • ID: ' + block[0]);
+        lines.push('    Expl: ' + block[1]);
+        return lines;
+    }
+    if (Array.isArray(block)) {
+        let n = 0;
+        block.forEach(function (item) {
+            if (isIdExplPair(item)) {
+                n++;
+                lines.push('  ' + n + ') ID: ' + item[0]);
+                lines.push('     Expl: ' + item[1]);
+            } else if (Array.isArray(item)) {
+                var sub = collectPathwayLines(item);
+                for (var s = 0; s < sub.length; s++) lines.push(sub[s]);
+            }
+        });
+    }
+    return lines;
+}
+/** Human-readable mark scheme / key points for PDF (matches app structures) */
+function formatMarkSchemeForPdf(q, part) {
+    var a = q.ans;
+    if (a == null) return '—';
+    if (part === 'A') {
+        var listA = Array.isArray(a) ? a : [a];
+        return listA.map(function (x, i) { return (listA.length > 1 ? '(' + (i + 1) + ') ' : '') + String(x); }).join('\n');
+    }
+    if (part === 'B' || part === 'SBa') {
+        if (!Array.isArray(a)) return String(a);
+        return a.map(function (p, i) { return 'Point ' + (i + 1) + ': ' + p; }).join('\n');
+    }
+    if (part === 'C') {
+        if (!Array.isArray(a)) return String(a);
+        var linesC = [];
+        a.forEach(function (pathway, idx) {
+            if (Array.isArray(pathway) && pathway.length >= 2 && typeof pathway[0] === 'string') {
+                linesC.push('Pathway ' + (idx + 1) + ':');
+                linesC.push('  Identification / definition: ' + pathway[0]);
+                linesC.push('  Explanation / example: ' + pathway[1]);
+            } else {
+                linesC.push('Pathway ' + (idx + 1) + ': ' + JSON.stringify(pathway));
+            }
+        });
+        return linesC.join('\n').trim() || JSON.stringify(a);
+    }
+    if (part === 'D' || part === 'SBb') {
+        if (!Array.isArray(a) || a.length < 2) return JSON.stringify(a);
+        if (JSON.stringify(a[0]) === JSON.stringify(a[1])) {
+            return 'Both points use the same alternatives:\n' + collectPathwayLines(a[0]).join('\n');
+        }
+        return 'Point 1 (any acceptable pathway):\n' + collectPathwayLines(a[0]).join('\n')
+            + '\n\nPoint 2 (any acceptable pathway):\n' + collectPathwayLines(a[1]).join('\n');
+    }
+    return String(a);
+}
+function downloadQuestionBankPdf() {
+    if (typeof window.jspdf === 'undefined' || !window.jspdf.jsPDF) {
+        alert('PDF library not loaded. Check your internet connection and reload the page.');
+        return;
+    }
+    if (!fullData || fullData.length === 0) {
+        loadData();
+        if (!fullData || fullData.length === 0) {
+            alert('No question data loaded. Ensure the .js data files are in the same folder as this HTML file.');
+            return;
+        }
+    }
+    var partOrder = ['A', 'B', 'C', 'D', 'SBa', 'SBb'];
+    var partLabels = {
+        A: 'Part A',
+        B: 'Part B',
+        C: 'Part C',
+        D: 'Part D',
+        SBa: 'Section B Part (a)',
+        SBb: 'Section B Part (b)'
+    };
+    var sorted = fullData.slice().sort(function (a, b) {
+        var ai = partOrder.indexOf(a.part);
+        var bi = partOrder.indexOf(b.part);
+        if (ai !== bi) return ai - bi;
+        return String(a.id).localeCompare(String(b.id));
+    });
+    var jsPDF = window.jspdf.jsPDF;
+    var doc = new jsPDF({ unit: 'mm', format: 'a4' });
+    var margin = 14;
+    var pageW = 210;
+    var maxW = pageW - margin * 2;
+    var y = margin;
+    var bodySize = 8;
+    var headSize = 11;
+    var lineH = 3.8;
+    var footerY = 292;
+
+    function newPage() {
+        doc.addPage();
+        y = margin;
+    }
+    function ensureSpace(h) {
+        if (y + h > footerY) newPage();
+    }
+    function addText(text, size, bold) {
+        var t = String(text);
+        doc.setFont('helvetica', bold ? 'bold' : 'normal');
+        doc.setFontSize(size || bodySize);
+        var lines = doc.splitTextToSize(t, maxW);
+        for (var i = 0; i < lines.length; i++) {
+            ensureSpace(lineH);
+            doc.text(lines[i], margin, y);
+            y += lineH;
+        }
+        doc.setFont('helvetica', 'normal');
+    }
+
+    doc.setFontSize(16);
+    doc.setFont('helvetica', 'bold');
+    doc.text('2281 Economics – Question bank & mark schemes', margin, y);
+    y += 10;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.text('Generated: ' + new Date().toLocaleString(), margin, y);
+    y += 6;
+    doc.text('Total questions: ' + sorted.length + ' (all sections)', margin, y);
+    y += 6;
+    doc.text('Each entry shows the case (if any), the question, and the key points / mark scheme used to check answers in the app.', margin, y);
+    y += 10;
+
+    sorted.forEach(function (q, idx) {
+        var ms = formatMarkSchemeForPdf(q, q.part);
+        var header = (idx + 1) + '. [' + q.id + '] ' + (partLabels[q.part] || q.part);
+        ensureSpace(20);
+        doc.setFontSize(headSize);
+        doc.setFont('helvetica', 'bold');
+        var hLines = doc.splitTextToSize(header, maxW);
+        for (var h = 0; h < hLines.length; h++) {
+            ensureSpace(lineH + 1);
+            doc.text(hLines[h], margin, y);
+            y += lineH + 1;
+        }
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(bodySize);
+        if (q.case) {
+            addText('Case: ' + q.case, bodySize, false);
+        }
+        addText('Question: ' + (q.q || '—'), bodySize, false);
+        addText('Mark scheme / key points:', bodySize, true);
+        addText(ms, bodySize, false);
+        if (q.concept) {
+            addText('Notes: ' + q.concept, 7, false);
+        }
+        y += 4;
+        doc.setLineWidth(0.1);
+        doc.setDrawColor(200);
+        ensureSpace(2);
+        doc.line(margin, y, pageW - margin, y);
+        y += 5;
+    });
+
+    var fname = 'Econ2281_question_bank_' + new Date().toISOString().slice(0, 10) + '.pdf';
+    doc.save(fname);
+}
+
+function exportXLS() {
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(sessionMistakeLog), 'Errors');
+    if (disputeLog.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(disputeLog.map(d => ({ questionId: d.questionId, schemePoint: d.schemeText, studentPoints: (d.studentPoints || []).join(' | '), approved: d.approved === null ? 'pending' : d.approved ? 'approved' : 'dismissed' }))), 'Disputes');
+    XLSX.writeFile(wb, 'Econ2281_Report.xlsx');
+}
+function clearUIPanel() { sessionMistakeLog = []; renderTeacherReview(); updateDisputeCount(); }
+function masterReset() {
+    if (confirm('Wipe all progress?')) {
+        appData = { mastered: [], correctHits: {}, struggling: {} }; save();
+        if (confirm('Clear all disputes?')) { disputeLog = []; saveDisputes(); }
+        location.reload();
+    }
+}
+function save() { localStorage.setItem('econ_2281_mastery', JSON.stringify(appData)); }
+function updatePoolCount() {
+    const filter = document.getElementById('sectionFilter').value;
+    const el = document.getElementById('pool-count');
+    if (!isMasteryEnabled()) { el.textContent = '—'; return; }
+    const pool = fullData.filter(q => q.part === filter && !appData.mastered.includes(q.id));
+    const sectionTotal = fullData.filter(q => q.part === filter).length;
+    el.textContent = pool.length + ' / ' + sectionTotal;
+}
+document.addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        if (document.getElementById('next-btn').style.display === 'block') nextQuestion();
+        else if (document.getElementById('submit-btn').style.display === 'block') checkAnswer(false);
+    }
+});
+function teacherPanelToggle() {
+    var body = document.getElementById('teacherBody');
+    var chevron = document.getElementById('teacherChevron');
+    body.classList.toggle('open');
+    chevron.textContent = body.classList.contains('open') ? '▲' : '▼';
+}
+document.getElementById('teacherHeader').addEventListener('click', teacherPanelToggle);
+
+loadData().then(data => {
+    if (data.length > 0) {
+        const cb = document.getElementById('masteryEnabled');
+        const saved = localStorage.getItem('econ_2281_mastery_enabled');
+        if (saved !== null) cb.checked = saved !== 'false';
+        updateDisputeCount(); updatePoolCount(); initSession();
+    }
+});
+</script>
+<script>
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(function () {});
+}
+</script>
+</body>
+</html>
